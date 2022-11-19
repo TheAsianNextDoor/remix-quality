@@ -83,7 +83,7 @@ model Permission {
   createdAt DateTime @default(now())
 }
 
-enum InspectoinStatus {
+enum InspectionStatus {
   NOT_STARTED
   PENDING
   COMPLETED
@@ -98,7 +98,7 @@ model Inspection {
   siteId      String
   title       String
   description String
-  status      InspectoinStatus? @default(NOT_STARTED)
+  status      InspectionStatus? @default(NOT_STARTED)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   Comment     Comment[]
@@ -135,14 +135,11 @@ model Task {
 
 model TaskLinks {
   id        String   @id @default(uuid())
-  Task      Task?    @relation(fields: [taskId], references: [id])
-  taskId    String?
   info      String
   link      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([taskId])
+  Task      Task[]
 }
 
 model Comment {

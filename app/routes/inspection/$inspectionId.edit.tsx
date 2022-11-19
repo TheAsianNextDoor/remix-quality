@@ -1,4 +1,5 @@
 import { Tabs } from '@mantine/core';
+import { Prisma } from '@prisma/client';
 import { json } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
 
@@ -6,50 +7,30 @@ import { FileInput } from '~/common/components';
 import styles from '~/styles/inspection/inspection.css';
 import { prisma } from '~/utils/prisma.server';
 
+import type { LoaderFunction } from '@remix-run/node';
+import type { ReactNode } from 'react';
+
 export function links() {
   return [{ rel: 'stylesheet', href: styles }];
 }
 
-const items = [
-  {
-    id: 1,
-    title: 'Metal meets requirements',
-    description:
-      'Nulla Lorem proident aliquip in consectetur officia labore eiusmod non officia excepteur fugiat amet aliqua.',
-    parentTask: 'Wind Tower 5',
-    links: [{ title: 'Metal Manual', link: 'link1' }],
-    actions: ['observations', 'comments', 'attachments', 'photos'],
-    status: 'Not Started',
-    statusOptions: ['Completed', 'Pending', 'Not Started', 'Skipped'],
-  },
-  {
-    id: 2,
-    title: 'Wood meets requirements',
-    description: 'Cupidatat proident cillum et anim eu fugiat excepteur anim duis laboris reprehenderit veniam quis.',
-    parentTask: 'Wind Tower 5',
-    links: [
-      { title: 'Metal Manual', link: 'link2' },
-      { title: 'Wood Manual', link: 'link3' },
-    ],
-    actions: ['observations', 'comments', 'attachments', 'photos'],
-    status: 'Completed',
-    statusOptions: ['Completed', 'Pending', 'Not Started', 'Skipped'],
-  },
-  {
-    id: 3,
-    title: 'Water meets requirements',
-    description: 'Enim esse amet sunt irure.',
-    parentTask: 'Wind Tower 5',
-    links: [],
-    actions: ['observations', 'comments', 'attachments', 'photos'],
-    status: 'Pending',
-    statusOptions: ['Completed', 'Pending', 'Not Started', 'Skipped'],
-  },
-];
+const taskWithLinksValidator = Prisma.validator<Prisma.TaskArgs>()({
+  include: { Links: true },
+});
+type TaskWithLinks = Prisma.TaskGetPayload<typeof taskWithLinksValidator>;
 
-export const loader = async () => {};
+type LoaderData = {
+  tasks: TaskWithLinks[];
+};
+export const loader: LoaderFunction = async () => {
+  const tasks = await prisma.task.findMany({
+    include: { Links: true },
+  });
 
-const InfoItem = ({ title, content }) => {
+  return json({ tasks });
+};
+
+const InfoItem = ({ title, content }: { title: string; content: string | ReactNode }) => {
   return (
     <div>
       <div className="underline">{title}</div>
@@ -58,13 +39,21 @@ const InfoItem = ({ title, content }) => {
   );
 };
 
-const InfoSection = ({ inspection }) => {
+const InfoSection = ({ task }: { task: TaskWithLinks }) => {
   return (
     <div className="bg-cyan-100 border-r-black border-r-2 w-full p-8 flex flex-col gap-3">
-      <div className="text-2xl">{inspection.title}</div>
-      <InfoItem title="Parent Task" content={inspection.parentTask} />
-      <InfoItem title="Description" content={inspection.description} />
-      <InfoItem title="Status" content={inspection.status} />
+      <div className="text-2xl">{task.title}</div>
+      <InfoItem title="Description" content={task.description} />
+      <InfoItem
+        title="Linked Material"
+        content={task?.Links?.map(({ info, link }, idx) => (
+          <div key={`${info}-${idx}`}>
+            <span>{info}</span>
+            <span>{link}</span>
+          </div>
+        ))}
+      />
+      <InfoItem title="Status" content={task.status} />
     </div>
   );
 };
@@ -113,16 +102,16 @@ const ActionSection = () => {
 };
 
 export default function InspectionEdit() {
-  const data = useLoaderData();
+  const { tasks } = useLoaderData() as unknown as LoaderData;
 
-  console.log(data);
+  console.log(tasks);
 
   return (
     <>
-      {items.map((inspection) => (
-        <div key={inspection.id} className="my-5 bg-gray-100">
+      {tasks.map((task) => (
+        <div key={task.id} className="my-5 bg-gray-100">
           <div className="grid">
-            <InfoSection inspection={inspection} />
+            <InfoSection task={task} />
             <ActionSection />
           </div>
         </div>
