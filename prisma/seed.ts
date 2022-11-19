@@ -2,6 +2,10 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 async function main() {
+  // await prisma.$executeRawUnsafe(
+  //   'drop table Organization, Site, Address, User, Permission, Inspection, Task, TaskLinks, Comment, Photo, Attachment;',
+  // );
+
   const organization = await prisma.organization.upsert({
     where: { name: 'wanzek' },
     update: {},
@@ -94,6 +98,18 @@ async function main() {
         description: 'Test the concrete PH',
         inspectionId: inspection?.id || '',
         completedBy: user.id,
+        Links: {
+          create: [
+            {
+              info: 'Test Kit Manual',
+              link: 'google.com',
+            },
+            {
+              info: 'Wet Manual',
+              link: 'pornhub.com',
+            },
+          ],
+        },
       },
     });
   }
